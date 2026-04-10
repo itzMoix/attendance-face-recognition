@@ -3,6 +3,7 @@ Student schemas for API requests/responses
 """
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 from pydantic import BaseModel, Field
 
 from app.schemas.user import UserResponse
@@ -35,12 +36,12 @@ class StudentUpdate(BaseModel):
 
 class StudentResponse(StudentBase):
     """Schema de respuesta de estudiante"""
-    id: str
-    user_id: str
-    photo_url: Optional[str]
+    id: UUID
+    user_id: UUID
+    photo_url: Optional[str] = None
     created_at: datetime
     user: Optional[UserResponse] = None  # Incluir datos del usuario
-    
+
     class Config:
         from_attributes = True
 
@@ -49,3 +50,4 @@ class StudentListResponse(BaseModel):
     """Schema de respuesta para lista de estudiantes"""
     total: int
     students: list[StudentResponse]
+

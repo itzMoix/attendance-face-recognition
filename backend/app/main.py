@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.settings import settings
-from app.api import auth, students
+from app.api import auth, students, professors, laboratories, subjects, face, attendance
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -16,18 +16,24 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
-# Configurar CORS
+# Configurar CORS - DEBE IR ANTES DE REGISTRAR ROUTERS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Registrar routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(students.router, prefix="/api/students", tags=["Students"])
+app.include_router(auth.router,         prefix="/api/auth",        tags=["Authentication"])
+app.include_router(students.router,     prefix="/api/students",    tags=["Students"])
+app.include_router(professors.router,   prefix="/api/professors",  tags=["Professors"])
+app.include_router(laboratories.router, prefix="/api/laboratories",tags=["Laboratories"])
+app.include_router(subjects.router,     prefix="/api/subjects",    tags=["Subjects"])
+app.include_router(face.router,         prefix="/api/face",        tags=["Face Recognition"])
+app.include_router(attendance.router,   prefix="/api/attendance",  tags=["Attendance"])
 
 
 @app.get("/")

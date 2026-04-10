@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CORS Test</title>
+</head>
+
+<body>
+    <h1>CORS Test - Backend</h1>
+    <button onclick="testHealth()">Test /health</button>
+    <button onclick="testLogin()">Test /api/auth/login</button>
+    <pre id="output"></pre>
+
+    <script>
+        const output = document.getElementById('output');
+
+        async function testHealth() {
+            output.textContent = 'Testing /health...\n';
+            try {
+                const response = await fetch('http://localhost:8000/health');
+                const data = await response.json();
+                output.textContent += `✅ Success!\nStatus: ${response.status}\nData: ${JSON.stringify(data, null, 2)}\n`;
+                output.textContent += `\nHeaders:\n`;
+                response.headers.forEach((value, key) => {
+                    output.textContent += `  ${key}: ${value}\n`;
+                });
+            } catch (error) {
+                output.textContent += `❌ Error: ${error.message}\n`;
+            }
+        }
+
+        async function testLogin() {
+            output.textContent = 'Testing /api/auth/login...\n';
+            try {
+                const response = await fetch('http://localhost:8000/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@university.edu',
+                        password: 'Password123!'
+                    })
+                });
+
+                output.textContent += `Status: ${response.status}\n`;
+                output.textContent += `\nCORS Headers:\n`;
+                const corsHeaders = ['access-control-allow-origin', 'access-control-allow-credentials', 'access-control-allow-methods', 'access-control-allow-headers'];
+                corsHeaders.forEach(header => {
+                    const value = response.headers.get(header);
+                    output.textContent += `  ${header}: ${value || 'NOT PRESENT'}\n`;
+                });
+
+                const data = await response.json();
+                output.textContent += `\nResponse: ${JSON.stringify(data, null, 2)}\n`;
+            } catch (error) {
+                output.textContent += `❌ Error: ${error.message}\n`;
+            }
+        }
+    </script>
+</body>
+
+</html>

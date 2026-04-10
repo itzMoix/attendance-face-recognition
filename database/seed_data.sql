@@ -12,20 +12,20 @@
 
 -- Administrador
 INSERT INTO users (id, email, password_hash, role, is_active) VALUES
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'admin@university.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'admin', true);
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'admin@university.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'ADMIN', true);
 
 -- Profesores
 INSERT INTO users (id, email, password_hash, role, is_active) VALUES
-('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'garcia.juan@university.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'professor', true),
-('b2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'martinez.maria@university.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'professor', true);
+('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'garcia.juan@university.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'PROFESSOR', true),
+('b2eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 'martinez.maria@university.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'PROFESSOR', true);
 
 -- Estudiantes
 INSERT INTO users (id, email, password_hash, role, is_active) VALUES
-('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'lopez.carlos@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'student', true),
-('c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 'fernandez.ana@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'student', true),
-('c3eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', 'rodriguez.luis@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'student', true),
-('c4eebc99-9c0b-4ef8-bb6d-6bb9bd380a77', 'gonzalez.sofia@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'student', true),
-('c5eebc99-9c0b-4ef8-bb6d-6bb9bd380a88', 'sanchez.miguel@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'student', true);
+('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 'lopez.carlos@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'STUDENT', true),
+('c2eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 'fernandez.ana@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'STUDENT', true),
+('c3eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', 'rodriguez.luis@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'STUDENT', true),
+('c4eebc99-9c0b-4ef8-bb6d-6bb9bd380a77', 'gonzalez.sofia@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'STUDENT', true),
+('c5eebc99-9c0b-4ef8-bb6d-6bb9bd380a88', 'sanchez.miguel@student.edu', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYILXw6O5K2', 'STUDENT', true);
 
 -- =====================================================
 -- PROFESORES

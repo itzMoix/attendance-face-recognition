@@ -3,6 +3,7 @@ User schemas for API requests/responses
 """
 from typing import Optional
 from datetime import datetime
+from uuid import UUID
 from pydantic import BaseModel, EmailStr, Field
 from app.models.user import UserRole
 
@@ -33,7 +34,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     """Schema de respuesta de usuario (sin password)"""
-    id: str
+    id: UUID
     role: UserRole
     is_active: bool
     created_at: datetime

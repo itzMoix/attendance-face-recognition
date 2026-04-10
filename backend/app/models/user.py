@@ -13,9 +13,9 @@ from app.config.database import Base
 
 class UserRole(str, enum.Enum):
     """Roles de usuario en el sistema"""
-    STUDENT = "student"
-    PROFESSOR = "professor"
-    ADMIN = "admin"
+    STUDENT = "STUDENT"
+    PROFESSOR = "PROFESSOR"
+    ADMIN = "ADMIN"
 
 
 class User(Base):

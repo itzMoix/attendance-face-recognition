@@ -55,7 +55,7 @@ async def list_students(
     return StudentListResponse(total=total, students=students)
 
 
-@router.post("", response_model=StudentResponse, status_code=status.HTTP201_CREATED)
+@router.post("", response_model=StudentResponse, status_code=status.HTTP_201_CREATED)
 async def create_student(
     student_data: StudentCreate,
     db: Session = Depends(get_db),

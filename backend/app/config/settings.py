@@ -32,10 +32,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 horas
     
     # CORS
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:3000",
-        "http://localhost:5173",  # Vite default port
-    ]
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"
+    
+    @property
+    def CORS_ORIGINS_LIST(self) -> list[str]:
+        """Parse CORS_ORIGINS from comma-separated string to list"""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
     
     # Face Recognition
     FACE_RECOGNITION_THRESHOLD: float = 0.6
