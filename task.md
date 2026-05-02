@@ -10,7 +10,7 @@
 
 ## Future Phases (After Planning Approval)
 - [ ] Backend Development
-  - [ ] Database setup and models
+  - [/] Database setup and models
   - [ ] Authentication system
   - [ ] Face recognition engine
   - [ ] REST API endpoints

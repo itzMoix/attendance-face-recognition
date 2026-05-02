@@ -49,6 +49,17 @@ export const laboratoryService = {
         const res = await axiosAuth.get('/api/laboratories');
         return res.data; // { total, laboratories }
     },
+    async create(data) {
+        const res = await axiosAuth.post('/api/laboratories', data);
+        return res.data;
+    },
+    async update(id, data) {
+        const res = await axiosAuth.put(`/api/laboratories/${id}`, data);
+        return res.data;
+    },
+    async delete(id) {
+        await axiosAuth.delete(`/api/laboratories/${id}`);
+    },
 };
 
 // ─── Materias ─────────────────────────────────────────────────────
@@ -59,6 +70,17 @@ export const subjectService = {
         if (is_active !== undefined) params.is_active = is_active;
         const res = await axiosAuth.get('/api/subjects', { params });
         return res.data; // { total, subjects }
+    },
+    async create(data) {
+        const res = await axiosAuth.post('/api/subjects', data);
+        return res.data;
+    },
+    async update(id, data) {
+        const res = await axiosAuth.put(`/api/subjects/${id}`, data);
+        return res.data;
+    },
+    async delete(id) {
+        await axiosAuth.delete(`/api/subjects/${id}`);
     },
 };
 
@@ -101,3 +123,41 @@ export const faceService = {
 };
 
 export default axiosAuth;
+
+// ─── Reportes ───────────────────────────────────────────────────
+export const reportService = {
+    async getStatistics() {
+        const res = await axiosAuth.get('/api/reports/statistics');
+        return res.data;
+    },
+    async getSubjectReport(subjectId, params = {}) {
+        const res = await axiosAuth.get(`/api/reports/subject/${subjectId}`, { params });
+        return res.data;
+    },
+    async getStudentReport(studentId) {
+        const res = await axiosAuth.get(`/api/reports/student/${studentId}`);
+        return res.data;
+    },
+};
+
+// ─── Utilidad CSV ────────────────────────────────────────────────
+export const exportToCSV = (rows, filename = 'export.csv') => {
+    if (!rows || rows.length === 0) return;
+    const headers = Object.keys(rows[0]);
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(row =>
+            headers.map(h => {
+                const val = row[h] ?? '';
+                return `"${String(val).replace(/"/g, '""')}"`;
+            }).join(',')
+        ),
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+};

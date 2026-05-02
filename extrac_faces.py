@@ -1,6 +1,6 @@
 import cv2
 import os
-imagesPath = "C:/Users/moise/OneDrive/Escritorio/ProyectoFaceRecognition/input_images"
+imagesPath = "input_images"
 if not os.path.exists("faces"):
      os.makedirs("faces")
      print("Nueva carpeta: faces")

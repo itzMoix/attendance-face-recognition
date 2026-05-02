@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config.settings import settings
-from app.api import auth, students, professors, laboratories, subjects, face, attendance
+from app.api import auth, students, professors, laboratories, subjects, face, attendance, reports
 
 # Crear aplicación FastAPI
 app = FastAPI(
@@ -34,6 +34,7 @@ app.include_router(laboratories.router, prefix="/api/laboratories",tags=["Labora
 app.include_router(subjects.router,     prefix="/api/subjects",    tags=["Subjects"])
 app.include_router(face.router,         prefix="/api/face",        tags=["Face Recognition"])
 app.include_router(attendance.router,   prefix="/api/attendance",  tags=["Attendance"])
+app.include_router(reports.router,      prefix="/api/reports",     tags=["Reports"])
 
 
 @app.get("/")

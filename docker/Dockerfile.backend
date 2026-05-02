@@ -1,0 +1,33 @@
+FROM python:3.10-slim
+
+# Evitar que Python escriba archivos .pyc e imprima sin buffer
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    # Configuración de dlib/CMake
+    DEBIAN_FRONTEND=noninteractive
+
+WORKDIR /app
+
+# Instalar dependencias del sistema necesarias para compilar dlib y usar OpenCV
+RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copiar requirements primero para aprovechar la cache de Docker
+COPY backend/requirements.txt /app/
+
+# Instalar dependencias de Python
+# Nota: La instalación de dlib/face-recognition puede tardar varios minutos
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copiar el código del backend
+COPY backend /app/
+
+# Exponer el puerto
+EXPOSE 8000
+
+# Ejecutar el servidor con uvicorn
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copiar dependencias primero para cacheo
+COPY frontend/package*.json ./
+
+# Instalar dependencias
+RUN npm install
+
+# Copiar el resto del código del frontend
+COPY frontend ./
+
+# Exponer puerto de Vite
+EXPOSE 5173
+
+# Ejecutar en modo desarrollo con host expuesto para que sea accesible desde fuera del contenedor
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

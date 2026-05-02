@@ -704,6 +704,42 @@ volumes:
 
 ### Decisiones Pendientes
 
-- [ ] ¿Prefieres usar Docker o instalación directa?
+- [x] ¿Prefieres usar Docker o instalación directa? -> **Docker seleccionado**
 - [ ] ¿Tienes ya el servidor donde se desplegará?
 - [ ] ¿Necesitas que genere documentación adicional de algún módulo específico?
+
+---
+
+## Plan de Implementación de Docker (En Progreso)
+
+Dado que ya tienes instalado Docker, configuraremos la arquitectura basada en contenedores. Esto eliminará todos los problemas de instalación de dependencias en Windows (especialmente para `dlib` y `face_recognition`) y asegurará un entorno consistente.
+
+### Propuesta de Archivos a Crear/Modificar
+
+#### 1. [NEW] `docker/Dockerfile.backend`
+Imagen basada en `python:3.10-slim`.
+- Instalará dependencias del sistema necesarias para compilar `dlib` y ejecutar OpenCV (`build-essential`, `cmake`, `libgl1-mesa-glx`, etc.).
+- Instalará las dependencias de Python desde `backend/requirements.txt`.
+- Expondrá el puerto 8000.
+
+#### 2. [NEW] `docker/Dockerfile.frontend`
+Imagen basada en `node:20-alpine`.
+- Copiará el código del frontend y sus dependencias.
+- Se configurará para ejecutarse en modo desarrollo (`npm run dev`) con hot-reloading para que puedas editar código y ver cambios en tiempo real.
+- Expondrá el puerto 5173 (puerto por defecto de Vite).
+
+#### 3. [NEW] `docker-compose.yml`
+Se creará en la raíz del proyecto para orquestar los tres servicios:
+- **db**: Base de datos PostgreSQL persistente (usando volúmenes de Docker).
+- **backend**: La API de FastAPI, conectada a la base de datos.
+- **frontend**: La aplicación React/Vite.
+
+#### 4. Archivos de configuración de entorno
+- Actualizar o crear `.env` para que el backend se conecte al host `db` (nombre del contenedor de PostgreSQL) en lugar de `localhost`.
+- Añadir `.dockerignore` tanto para backend como para frontend para evitar copiar archivos innecesarios (`node_modules`, `__pycache__`, etc.) y acelerar las construcciones.
+
+### User Review Required
+> [!IMPORTANT]
+> Revisa este plan de configuración de Docker. Al compilar el contenedor del backend por primera vez, tomará algo de tiempo (aproximadamente 5-15 minutos) porque necesita compilar la librería `dlib` desde cero en el contenedor de Linux.
+> 
+> Si estás de acuerdo con este enfoque, procederé a crear los Dockerfiles y el `docker-compose.yml` de inmediato.

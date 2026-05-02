@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Users, GraduationCap, BookOpen, Activity, TrendingUp, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import StudentManagement from '../components/admin/StudentManagement';
+import ProfessorManagement from '../components/admin/ProfessorManagement';
+import LaboratoryManagement from '../components/admin/LaboratoryManagement';
+import SubjectManagement from '../components/admin/SubjectManagement';
 import { attendanceService, professorService, subjectService } from '../services/apiService';
 import studentService from '../services/studentService';
 import useAuthStore from '../store/authStore';
@@ -98,7 +101,7 @@ const AdminDashboard = () => {
     const [stats, setStats] = useState({ students: 0, professors: 0, subjects: 0, attendancesToday: 0 });
     const [recentAttendances, setRecentAttendances] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'students'
+    const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'students' | 'professors' | 'laboratories' | 'subjects'
 
     const fetchData = async () => {
         setLoading(true);
@@ -147,8 +150,14 @@ const AdminDashboard = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl w-fit">
-                {[['overview', 'Resumen'], ['students', 'Estudiantes']].map(([key, label]) => (
+            <div className="flex flex-wrap gap-1 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl w-fit">
+                {[
+                    ['overview',     'Resumen'],
+                    ['students',     'Estudiantes'],
+                    ['professors',   'Profesores'],
+                    ['laboratories', 'Laboratorios'],
+                    ['subjects',     'Materias'],
+                ].map(([key, label]) => (
                     <button
                         key={key}
                         onClick={() => setActiveTab(key)}
@@ -176,7 +185,10 @@ const AdminDashboard = () => {
                 </>
             )}
 
-            {activeTab === 'students' && <StudentManagement />}
+            {activeTab === 'students'     && <StudentManagement />}
+            {activeTab === 'professors'   && <ProfessorManagement />}
+            {activeTab === 'laboratories' && <LaboratoryManagement />}
+            {activeTab === 'subjects'     && <SubjectManagement />}
         </div>
     );
 };

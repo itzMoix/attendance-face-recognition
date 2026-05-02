@@ -4,39 +4,31 @@ Security utilities - JWT, password hashing, authentication
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from app.config.settings import settings
-
-# Configuración de bcrypt para hashear passwords
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
     """
     Hashea una contraseña usando bcrypt.
-    
-    Args:
-        password: Contraseña en texto plano
-        
-    Returns:
-        Hash de la contraseña
     """
-    return pwd_context.hash(password)
+    salt = bcrypt.gensalt(rounds=12)
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verifica que una contraseña coincida con su hash.
-    
-    Args:
-        plain_password: Contraseña en texto plano
-        hashed_password: Hash almacenado en BD
-        
-    Returns:
-        True si coinciden, False en caso contrario
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8")
+        )
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

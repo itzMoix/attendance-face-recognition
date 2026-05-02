@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Plus, Edit2, Trash2, X, Loader2, RefreshCw, User } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, X, Loader2, RefreshCw, User, Camera } from 'lucide-react';
 import { toast } from 'react-toastify';
 import studentService from '../../services/studentService';
+import FaceRegistrationModal from '../camera/FaceRegistrationModal';
 
 // ────────────────────────────────────────────────
 // Modal para Crear / Editar estudiante
@@ -56,8 +57,12 @@ const StudentModal = ({ isOpen, onClose, onSave, student }) => {
                 const created = await studentService.create(createData);
                 onSave(created, 'create');
                 toast.success('Estudiante creado correctamente');
+                // Al crear, cerramos este modal y abrimos el de la cámara
+                onClose();
+                if (window.openFaceModal) {
+                    window.openFaceModal(created);
+                }
             }
-            onClose();
         } catch (err) {
             const msg = err.response?.data?.detail || err.message || 'Error al guardar';
             toast.error(msg);
@@ -211,8 +216,15 @@ const StudentManagement = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [modalOpen, setModalOpen] = useState(false);
     const [deleteModal, setDeleteModal] = useState({ open: false, student: null });
+    const [faceModal, setFaceModal] = useState({ open: false, student: null });
     const [selectedStudent, setSelectedStudent] = useState(null);
     const [deleting, setDeleting] = useState(false);
+
+    // Exponer la función globalmente solo para el Modal de creación
+    useEffect(() => {
+        window.openFaceModal = (student) => setFaceModal({ open: true, student });
+        return () => delete window.openFaceModal;
+    }, []);
 
     const fetchStudents = useCallback(async () => {
         setLoading(true);
@@ -239,6 +251,7 @@ const StudentManagement = () => {
     const handleOpenCreate = () => { setSelectedStudent(null); setModalOpen(true); };
     const handleOpenEdit = (student) => { setSelectedStudent(student); setModalOpen(true); };
     const handleOpenDelete = (student) => setDeleteModal({ open: true, student });
+    const handleOpenFace = (student) => setFaceModal({ open: true, student });
 
     const handleSave = (saved, type) => {
         if (type === 'create') {
@@ -280,6 +293,11 @@ const StudentManagement = () => {
                 onConfirm={handleDelete}
                 student={deleteModal.student}
                 loading={deleting}
+            />
+            <FaceRegistrationModal
+                isOpen={faceModal.open}
+                onClose={() => setFaceModal({ open: false, student: null })}
+                student={faceModal.student}
             />
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors duration-200">
@@ -373,6 +391,13 @@ const StudentManagement = () => {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-1">
+                                                <button
+                                                    onClick={() => handleOpenFace(student)}
+                                                    className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors"
+                                                    title="Registrar/Actualizar Rostro"
+                                                >
+                                                    <Camera className="h-4 w-4" />
+                                                </button>
                                                 <button
                                                     onClick={() => handleOpenEdit(student)}
                                                     className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors"

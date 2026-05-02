@@ -4,7 +4,7 @@ import {
     Loader2, RefreshCw, ChevronRight, Activity
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { attendanceService, subjectService } from '../services/apiService';
+import { attendanceService, subjectService, exportToCSV } from '../services/apiService';
 import useAuthStore from '../store/authStore';
 
 // ─── Tarjeta de materia ───────────────────────────────────────────
@@ -32,75 +32,96 @@ const SubjectCard = ({ subject, onClick, selected }) => (
 );
 
 // ─── Tabla de asistencias de la materia ──────────────────────────
-const AttendanceTable = ({ attendances, loading, subjectName }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex-1">
-        <div className="p-5 border-b border-gray-100 dark:border-gray-700">
-            <h3 className="font-bold text-gray-900 dark:text-white">
-                {subjectName ? `Asistencias — ${subjectName}` : 'Selecciona una materia'}
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {attendances.length > 0 ? `${attendances.length} registros` : 'Sin registros aún'}
-            </p>
-        </div>
-        <div className="overflow-x-auto">
-            {loading ? (
-                <div className="flex justify-center py-12">
-                    <Loader2 className="h-7 w-7 animate-spin text-indigo-400" />
+const AttendanceTable = ({ attendances, loading, subjectName }) => {
+    const handleExport = () => {
+        const rows = attendances.map(a => ({
+            Estudiante: a.student_name || '',
+            Confianza: `${(a.confidence_score * 100).toFixed(0)}%`,
+            Fecha: new Date(a.check_in_time).toLocaleString('es-MX'),
+        }));
+        exportToCSV(rows, `asistencias-${(subjectName || 'materia').replace(/\s+/g, '-')}.csv`);
+    };
+    return (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex-1">
+            <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                <div>
+                    <h3 className="font-bold text-gray-900 dark:text-white">
+                        {subjectName ? `Asistencias — ${subjectName}` : 'Selecciona una materia'}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        {attendances.length > 0 ? `${attendances.length} registros` : 'Sin registros aún'}
+                    </p>
                 </div>
-            ) : !subjectName ? (
-                <div className="text-center py-16 text-gray-400">
-                    <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">Selecciona una materia para ver sus asistencias</p>
-                </div>
-            ) : attendances.length === 0 ? (
-                <div className="text-center py-16 text-gray-400">
-                    <Activity className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">No hay asistencias para esta materia</p>
-                </div>
-            ) : (
-                <table className="w-full text-left">
-                    <thead>
-                        <tr className="bg-gray-50 dark:bg-gray-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <th className="px-5 py-3">Estudiante</th>
-                            <th className="px-5 py-3">Confianza</th>
-                            <th className="px-5 py-3">Fecha y Hora</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                        {attendances.map((a) => (
-                            <tr key={a.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                                <td className="px-5 py-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs font-bold">
-                                            {a.student_name?.split(' ').map(n => n[0]).join('').slice(0,2)}
-                                        </div>
-                                        <span className="text-sm font-medium text-gray-900 dark:text-white">{a.student_name || '—'}</span>
-                                    </div>
-                                </td>
-                                <td className="px-5 py-3">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        a.confidence_score >= 0.8 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                        : a.confidence_score >= 0.6 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-                                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                                    }`}>
-                                        <CheckCircle className="h-3 w-3 mr-1" />
-                                        {(a.confidence_score * 100).toFixed(0)}%
-                                    </span>
-                                </td>
-                                <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">
-                                    {new Date(a.check_in_time).toLocaleString('es-MX', {
-                                        day: '2-digit', month: 'short', year: 'numeric',
-                                        hour: '2-digit', minute: '2-digit',
-                                    })}
-                                </td>
+                {attendances.length > 0 && (
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 px-3 py-1.5 text-sm bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+                    >
+                        ↓ Exportar CSV
+                    </button>
+                )}
+            </div>
+            <div className="overflow-x-auto">
+                {loading ? (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className="h-7 w-7 animate-spin text-indigo-400" />
+                    </div>
+                ) : !subjectName ? (
+                    <div className="text-center py-16 text-gray-400">
+                        <BookOpen className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">Selecciona una materia para ver sus asistencias</p>
+                    </div>
+                ) : attendances.length === 0 ? (
+                    <div className="text-center py-16 text-gray-400">
+                        <Activity className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                        <p className="text-sm">No hay asistencias para esta materia</p>
+                    </div>
+                ) : (
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-gray-50 dark:bg-gray-700/50 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                <th className="px-5 py-3">Estudiante</th>
+                                <th className="px-5 py-3">Confianza</th>
+                                <th className="px-5 py-3">Fecha y Hora</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
-            )}
+                        </thead>
+                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {attendances.map((a) => (
+                                <tr key={a.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                                    <td className="px-5 py-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs font-bold">
+                                                {a.student_name?.split(' ').map(n => n[0]).join('').slice(0,2)}
+                                            </div>
+                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{a.student_name || '—'}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-3">
+                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                            a.confidence_score >= 0.8 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                            : a.confidence_score >= 0.6 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                        }`}>
+                                            <CheckCircle className="h-3 w-3 mr-1" />
+                                            {(a.confidence_score * 100).toFixed(0)}%
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                        {new Date(a.check_in_time).toLocaleString('es-MX', {
+                                            day: '2-digit', month: 'short', year: 'numeric',
+                                            hour: '2-digit', minute: '2-digit',
+                                        })}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
+
 
 // ─── Dashboard del Profesor ───────────────────────────────────────
 const ProfessorDashboard = () => {

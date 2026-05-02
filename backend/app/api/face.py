@@ -3,9 +3,10 @@ Face encoding management endpoints.
 Permite registrar, actualizar y eliminar encodings faciales de estudiantes.
 """
 import io
+import base64
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, UploadFile, File, status
+from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
@@ -57,6 +58,35 @@ async def face_status(
         "encodings_in_db": total,
         "camera_running": camera_session.is_running,
     }
+
+
+# ────────────────────────────────────────────────────────────────────
+# GET /api/face/encodings  — Descargar todos los encodings
+# ────────────────────────────────────────────────────────────────────
+
+@router.get("/encodings")
+async def get_all_encodings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Devuelve todos los encodings serializados en Base64 para reconocimiento local en clientes."""
+    rows = (
+        db.query(FaceEncoding, Student)
+        .join(Student, FaceEncoding.student_id == Student.id)
+        .all()
+    )
+    
+    results = []
+    for fe, student in rows:
+        if fe.encoding:
+            encoded_str = base64.b64encode(fe.encoding).decode('utf-8')
+            results.append({
+                "student_id": str(student.id),
+                "name": f"{student.first_name} {student.last_name}",
+                "encoding_base64": encoded_str
+            })
+            
+    return {"data": results}
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -177,6 +207,103 @@ async def capture_face(
     return {
         "message": f"Encoding {action} por captura de cámara para {student.first_name} {student.last_name}",
         "student_id": str(student.id),
+    }
+
+
+# ────────────────────────────────────────────────────────────────────
+# POST /api/face/recognize-frame  — frame desde webcam del navegador
+# ────────────────────────────────────────────────────────────────────
+
+@router.post("/recognize-frame")
+async def recognize_frame_endpoint(
+    file: UploadFile = File(..., description="Frame JPEG capturado por el navegador"),
+    subject_id: str = Form(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Recibe un frame JPEG desde la webcam del navegador,
+    reconoce caras y registra asistencias automáticamente.
+    """
+    import numpy as np
+    from app.models.attendance import Attendance
+    from datetime import datetime, timezone
+
+    _check_fr_available()
+
+    contents = await file.read()
+    if len(contents) == 0:
+        return {"recognized": False, "name": None, "confidence": 0.0}
+
+    # Decodificar imagen
+    nparr = np.frombuffer(contents, np.uint8)
+    import cv2
+    frame_bgr = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if frame_bgr is None:
+        return {"recognized": False, "name": None, "confidence": 0.0}
+
+    # Cargar encodings de la BD
+    from app.services.face_service import recognize_frame, deserialize_encoding
+    rows = db.query(FaceEncoding).all()
+    if not rows:
+        return {"recognized": False, "name": None, "confidence": 0.0, "message": "No hay encodings registrados"}
+
+    known_encodings, known_ids, known_names = [], [], []
+    for fe in rows:
+        student = db.query(Student).filter(Student.id == fe.student_id).first()
+        if student and fe.encoding:
+            known_encodings.append(deserialize_encoding(fe.encoding))
+            known_ids.append(str(student.id))
+            known_names.append(f"{student.first_name} {student.last_name}")
+
+    if not known_encodings:
+        return {"recognized": False, "name": None, "confidence": 0.0}
+
+    # Reconocer
+    _, matches = recognize_frame(frame_bgr, known_encodings, known_ids, known_names)
+
+    if not matches:
+        return {"recognized": False, "name": None, "confidence": 0.0}
+
+    best = matches[0]
+
+    # Registrar asistencia si hay materia activa y el alumno no fue registrado hoy
+    if subject_id:
+        from app.models.subject import Subject
+        subject = db.query(Subject).filter(Subject.id == subject_id).first()
+        if not subject or not subject.laboratory_id:
+            return {
+                "recognized": True,
+                "name": best["name"],
+                "confidence": best["confidence"],
+                "student_id": best["student_id"],
+                "warning": "Materia sin laboratorio asignado. Asigna un laboratorio a la materia para registrar asistencia.",
+            }
+
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        existing = db.query(Attendance).filter(
+            Attendance.student_id == best["student_id"],
+            Attendance.subject_id == subject_id,
+            Attendance.check_in_time >= today_start,
+        ).first()
+
+        if not existing:
+            att = Attendance(
+                student_id=best["student_id"],
+                subject_id=subject_id,
+                laboratory_id=subject.laboratory_id,
+                confidence_score=best["confidence"],
+                check_in_time=datetime.now(timezone.utc),
+            )
+            db.add(att)
+            db.commit()
+
+
+    return {
+        "recognized": True,
+        "name": best["name"],
+        "confidence": best["confidence"],
+        "student_id": best["student_id"],
     }
 
 

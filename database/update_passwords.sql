@@ -1,9 +1,11 @@
--- Actualizar hashes de contraseñas con hash válido de bcrypt
--- Password para todos: "Password123!"
--- Hash generado: $2b$12$uzpDM08EOrjPH.36C8VnBeeQWxNJzoU8h.Mkrcio/dxCyZ4BujU2.
+-- Actualizar contraseñas con hash correcto de Password123!
+UPDATE users SET password_hash = '$2b$12$Xv5nAyaq95LnC0gLdUQU.uYsULE7RWcGXyouwckljXHCQSlo0oRDy'
+WHERE email IN (
+    'admin@university.edu',
+    'garcia.juan@university.edu',
+    'martinez.maria@university.edu',
+    'lopez.carlos@student.edu',
+    'fernandez.ana@student.edu'
+);
 
-UPDATE users 
-SET password_hash = '$2b$12$uzpDM08EOrjPH.36C8VnBeeQWxNJzoU8h.Mkrcio/dxCyZ4BujU2.';
-
--- Verificar
-SELECT email, role, LEFT(password_hash, 30) as hash_check FROM users;
+SELECT email, role, LEFT(password_hash, 30) AS hash_ok FROM users;
