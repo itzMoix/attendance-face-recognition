@@ -39,7 +39,8 @@ const StudentPortal = () => {
             }
         };
         fetchReport();
-    }, [user]);
+    }, [user?.student_id]);
+
 
     if (loading) {
         return (
@@ -69,7 +70,7 @@ const StudentPortal = () => {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">Mi Portal Escolar</h1>
                     <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        Bienvenido, <span className="font-semibold text-indigo-600 dark:text-indigo-400">{report?.student_name || user?.email}</span>
+                        Bienvenido, <span className="font-semibold text-indigo-600 dark:text-indigo-400">{report?.student?.full_name || user?.email}</span>
                     </p>
                 </div>
                 <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 px-4 py-2 rounded-xl border border-indigo-100 dark:border-indigo-800">
@@ -84,19 +85,19 @@ const StudentPortal = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard 
                     title="Total Asistencias" 
-                    value={report?.total_attendances || 0} 
+                    value={report?.summary?.total_attendances || 0} 
                     icon={CheckCircle} 
                     color="bg-emerald-500 shadow-emerald-200 dark:shadow-none" 
                 />
                 <StatCard 
                     title="Promedio Confianza" 
-                    value={`${((report?.average_confidence || 0) * 100).toFixed(0)}%`} 
+                    value={`${((report?.summary?.avg_confidence || 0) * 100).toFixed(0)}%`} 
                     icon={TrendingUp} 
                     color="bg-blue-500 shadow-blue-200 dark:shadow-none" 
                 />
                 <StatCard 
                     title="Materias Activas" 
-                    value={report?.summary?.length || 0} 
+                    value={report?.by_subject?.length || 0} 
                     icon={BookOpen} 
                     color="bg-amber-500 shadow-amber-200 dark:shadow-none" 
                 />
@@ -163,26 +164,26 @@ const StudentPortal = () => {
                             Resumen por Materia
                         </h3>
                         <div className="space-y-6">
-                            {report?.summary?.map((s, idx) => (
+                            {report?.by_subject?.map((s, idx) => (
                                 <div key={idx} className="space-y-2">
                                     <div className="flex justify-between items-end">
                                         <div className="min-w-0">
                                             <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{s.subject_name}</p>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400">{s.attendances} asistencias</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400">{s.count} asistencias</p>
                                         </div>
                                         <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                                            {Math.round(s.average_confidence * 100)}% conf.
+                                            {Math.round(s.avg_confidence * 100)}% conf.
                                         </span>
                                     </div>
                                     <div className="h-2 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
                                         <div 
                                             className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
-                                            style={{ width: `${s.average_confidence * 100}%` }}
+                                            style={{ width: `${s.avg_confidence * 100}%` }}
                                         />
                                     </div>
                                 </div>
                             ))}
-                            {!report?.summary?.length && (
+                            {!report?.by_subject?.length && (
                                 <p className="text-sm text-gray-400 text-center py-4">No hay datos por materia</p>
                             )}
                         </div>

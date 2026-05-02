@@ -180,8 +180,13 @@ async def get_student_report(
         },
         "by_subject": sorted(by_subject.values(), key=lambda x: x["count"], reverse=True),
         "recent_attendances": [
-            {"id": str(a.id), "subject_id": str(a.subject_id),
-             "check_in_time": a.check_in_time.isoformat(), "confidence_score": a.confidence_score}
+            {
+                "id": str(a.id),
+                "subject_id": str(a.subject_id),
+                "subject_name": (db.query(Subject).filter(Subject.id == a.subject_id).first() or type('', (), {'name': 'Desconocida'})()).name,
+                "check_in_time": a.check_in_time.isoformat(),
+                "confidence_score": a.confidence_score
+            }
             for a in attendances[:50]
         ],
     }
