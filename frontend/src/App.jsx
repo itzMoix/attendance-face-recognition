@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import ProfessorDashboard from './pages/ProfessorDashboard';
 import StudentPortal from './pages/StudentPortal';
 import LiveAttendance from './pages/LiveAttendance';
+import ReportsDashboard from './pages/ReportsDashboard';
 import './index.css';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -49,6 +50,14 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['PROFESSOR', 'ADMIN']}>
                   <LiveAttendance />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="reports"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN', 'PROFESSOR']}>
+                  <ReportsDashboard />
                 </ProtectedRoute>
               }
             />

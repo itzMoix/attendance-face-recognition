@@ -53,3 +53,20 @@ class SessionStatusResponse(BaseModel):
     subject_id: Optional[str] = None
     encodings_loaded: int
     message: str
+
+
+class OfflineSyncRecord(BaseModel):
+    """Un registro de asistencia capturado offline para sincronizar."""
+    student_id: UUID
+    subject_id: UUID
+    laboratory_id: UUID
+    confidence_score: float = Field(default=0.5, ge=0.0, le=1.0)
+    check_in_time: Optional[datetime] = None   # Si None, se usa now()
+
+
+class OfflineSyncResponse(BaseModel):
+    """Resultado de la sincronización offline."""
+    received: int
+    saved: int
+    duplicates_skipped: int
+    errors: int

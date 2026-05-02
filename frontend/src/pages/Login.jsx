@@ -121,8 +121,8 @@ const Login = () => {
                     </div>
 
                     <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                        <p>Credenciales de prueba:</p>
-                        <p>admin@university.edu / Password123!</p>
+                        <p>Credenciales de acceso:</p>
+                        <p className="font-mono font-medium">admin@sistema.edu / admin1234</p>
                     </div>
                 </form>
             </div>
