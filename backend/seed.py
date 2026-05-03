@@ -93,6 +93,23 @@ def seed(db: Session):
     else:
         print(f"  → Ya existe: {lab.name}")
 
+    # ── 1.5. Administrador ─────────────────────────────────────────
+    print("\n[1.5/6] Creando Administrador...")
+    admin_user = db.query(User).filter_by(email="admin@sistema.edu").first()
+    if not admin_user:
+        admin_user = User(
+            id=uuid.uuid4(),
+            email="admin@sistema.edu",
+            password_hash=hash_pwd("admin1234"),
+            role=UserRole.ADMIN,
+            is_active=True,
+        )
+        db.add(admin_user)
+        db.flush()
+        print(f"  ✓ Admin creado: admin@sistema.edu")
+    else:
+        print(f"  → Ya existe: admin@sistema.edu")
+
     # ── 2. Profesor (usuario + registro de profesor) ───────────────
     print("\n[2/6] Creando Profesor...")
     prof_user = db.query(User).filter_by(email="profesor@sistema.edu").first()

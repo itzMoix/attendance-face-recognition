@@ -39,6 +39,8 @@ class UserResponse(UserBase):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    student_id: Optional[UUID] = None  # Solo presente si el usuario es ESTUDIANTE
     
     class Config:
         from_attributes = True  # Permite convertir desde ORM models
+
