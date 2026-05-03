@@ -23,6 +23,8 @@ from app.schemas.attendance import (
     AttendanceListResponse,
     SessionStartRequest,
     SessionStatusResponse,
+    OfflineSyncRecord,
+    OfflineSyncResponse,
 )
 from app.core.dependencies import get_current_active_user, require_role
 from app.core.exceptions import NotFoundException, BadRequestException
@@ -342,3 +344,74 @@ def _get_lab_from_subject(subject_id: str, db: Session) -> Optional[UUID]:
     """Helper: obtiene el laboratory_id de una materia."""
     subject = db.query(Subject).filter(Subject.id == subject_id).first()
     return subject.laboratory_id if subject else None
+
+
+# ────────────────────────────────────────────────────────────────────
+# POST /api/attendance/sync-offline
+# Recibe registros encolados en IndexedDB y los persiste en la BD.
+# ────────────────────────────────────────────────────────────────────
+
+@router.post("/sync-offline", response_model=OfflineSyncResponse)
+async def sync_offline(
+    records: list[OfflineSyncRecord],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Sincroniza registros de asistencia capturados en modo offline (IndexedDB).
+    Ignora duplicados (mismo estudiante + materia en ventana de 1h).
+
+    Body: lista de OfflineSyncRecord
+    Retorna: { received, saved, duplicates_skipped, errors }
+    """
+    saved = 0
+    duplicates = 0
+    errors = 0
+
+    for record in records:
+        try:
+            check_time = record.check_in_time or datetime.utcnow()
+
+            # Verificar que el estudiante y la materia existen
+            student = db.query(Student).filter(Student.id == record.student_id).first()
+            subject = db.query(Subject).filter(Subject.id == record.subject_id).first()
+            if not student or not subject:
+                errors += 1
+                continue
+
+            # Anti-duplicado: misma asistencia en ventana de 1h alrededor del check_in_time
+            window_start = check_time - timedelta(hours=1)
+            window_end   = check_time + timedelta(hours=1)
+            exists = db.query(Attendance).filter(
+                Attendance.student_id == record.student_id,
+                Attendance.subject_id  == record.subject_id,
+                Attendance.check_in_time >= window_start,
+                Attendance.check_in_time <= window_end,
+            ).first()
+
+            if exists:
+                duplicates += 1
+                continue
+
+            att = Attendance(
+                student_id=record.student_id,
+                subject_id=record.subject_id,
+                laboratory_id=record.laboratory_id,
+                confidence_score=record.confidence_score,
+                check_in_time=check_time,
+                synced=True,
+            )
+            db.add(att)
+            db.flush()
+            saved += 1
+
+        except Exception:
+            errors += 1
+
+    db.commit()
+    return OfflineSyncResponse(
+        received=len(records),
+        saved=saved,
+        duplicates_skipped=duplicates,
+        errors=errors,
+    )

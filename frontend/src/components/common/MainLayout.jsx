@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import { Sun, Moon, LogOut, Video, LayoutDashboard, GraduationCap, User, Bell } from 'lucide-react';
+import { Sun, Moon, LogOut, Video, LayoutDashboard, GraduationCap, User, BarChart3 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 
 // Navegación por rol
@@ -9,10 +9,12 @@ const NAV_BY_ROLE = {
     ADMIN: [
         { to: '/admin',     label: 'Admin',     icon: LayoutDashboard },
         { to: '/live',      label: 'Live Cam',  icon: Video, highlight: true },
+        { to: '/reports',   label: 'Reportes',  icon: BarChart3 },
     ],
     PROFESSOR: [
         { to: '/professor', label: 'Mis Clases', icon: GraduationCap },
         { to: '/live',      label: 'Live Cam',   icon: Video, highlight: true },
+        { to: '/reports',   label: 'Reportes',   icon: BarChart3 },
     ],
     STUDENT: [
         { to: '/student',   label: 'Mi Portal',  icon: User },

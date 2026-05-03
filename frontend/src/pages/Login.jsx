@@ -119,7 +119,11 @@ const Login = () => {
                         </button>
                     </form>
 
-                    <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+                    <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-3">
+                        <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+                            <p className="font-medium mb-1">Credenciales de demo:</p>
+                            <p className="font-mono bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-lg inline-block">admin@sistema.edu / admin1234</p>
+                        </div>
                         <div className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 justify-center">
                             <Lock className="h-3 w-3" />
                             Acceso seguro mediante encriptación SSL

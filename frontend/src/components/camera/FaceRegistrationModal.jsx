@@ -3,6 +3,7 @@ import Webcam from 'react-webcam';
 import { X, Camera, RefreshCw, Upload, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import faceService from '../../services/faceService';
+import cameraService from '../../services/camera.service';
 
 const FaceRegistrationModal = ({ isOpen, onClose, student }) => {
     const webcamRef = useRef(null);
@@ -27,22 +28,12 @@ const FaceRegistrationModal = ({ isOpen, onClose, student }) => {
         setImgSrc(null);
     };
 
-    // Helper to convert base64 to Blob
-    const dataURLtoBlob = (dataurl) => {
-        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-        while (n--) {
-            u8arr[n] = bstr.charCodeAt(n);
-        }
-        return new Blob([u8arr], { type: mime });
-    };
-
     const handleUpload = async () => {
         if (!imgSrc || !student) return;
         
         setLoading(true);
         try {
-            const blob = dataURLtoBlob(imgSrc);
+            const blob = await cameraService.dataURLtoBlob(imgSrc);
             await faceService.uploadFace(student.id, blob);
             
             setSuccess(true);
@@ -99,7 +90,7 @@ const FaceRegistrationModal = ({ isOpen, onClose, student }) => {
                                     audio={false}
                                     ref={webcamRef}
                                     screenshotFormat="image/jpeg"
-                                    videoConstraints={{ facingMode: "user" }}
+                                    videoConstraints={cameraService.getVideoConstraints()}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
@@ -148,3 +139,4 @@ const FaceRegistrationModal = ({ isOpen, onClose, student }) => {
 };
 
 export default FaceRegistrationModal;
+

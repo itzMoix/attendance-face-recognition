@@ -1,5 +1,7 @@
 // API Configuration
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// En Docker: el proxy de Vite reenvía /api/* al contenedor backend.
+// En producción: usar VITE_API_URL para apuntar al servidor real.
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 export const api = {
     baseURL: API_URL,
