@@ -38,69 +38,14 @@ from app.services.face_service import (
 
 router = APIRouter()
 
-# ────────────────────────────────────────────────────────────────────
-# Helpers
-# ────────────────────────────────────────────────────────────────────
-
-def _load_encodings(db: Session) -> tuple[list, list, list]:
-    """Carga todos los encodings de la BD. Retorna (encodings, ids, names)."""
-    rows = (
-        db.query(FaceEncoding, Student)
-        .join(Student, FaceEncoding.student_id == Student.id)
-        .all()
-    )
-    encodings, ids, names = [], [], []
-    for fe, student in rows:
-        try:
-            enc = deserialize_encoding(fe.encoding)
-            encodings.append(enc)
-            ids.append(str(student.id))
-            names.append(f"{student.first_name} {student.last_name}")
-        except Exception:
-            continue
-    return encodings, ids, names
-
-
-def _already_registered(student_id, subject_id, db: Session) -> bool:
-    """Evita duplicados: True si el estudiante ya tiene asistencia en la última hora."""
-    cutoff = datetime.utcnow() - timedelta(hours=1)
-    existing = (
-        db.query(Attendance)
-        .filter(
-            Attendance.student_id == student_id,
-            Attendance.subject_id == subject_id,
-            Attendance.check_in_time >= cutoff,
-        )
-        .first()
-    )
-    return existing is not None
-
-
-def _build_response(att: Attendance) -> AttendanceResponse:
-    student_name = None
-    subject_name = None
-    lab_name = None
-    if att.student:
-        student_name = f"{att.student.first_name} {att.student.last_name}"
-    if att.subject:
-        subject_name = att.subject.name
-    if att.laboratory:
-        lab_name = att.laboratory.name
-
-    return AttendanceResponse(
-        id=att.id,
-        student_id=att.student_id,
-        laboratory_id=att.laboratory_id,
-        subject_id=att.subject_id,
-        check_in_time=att.check_in_time,
-        confidence_score=att.confidence_score,
-        photo_snapshot_url=att.photo_snapshot_url,
-        synced=att.synced,
-        student_name=student_name,
-        subject_name=subject_name,
-        laboratory_name=lab_name,
-    )
-
+from app.services.attendance_service import (
+    get_lab_from_subject,
+    load_all_encodings,
+    is_already_registered,
+    build_attendance_response,
+    create_manual_attendance
+)
+from app.services.offline_sync_service import sync_offline_attendances
 
 # ────────────────────────────────────────────────────────────────────
 # GET /api/attendance/  — listar asistencias
@@ -143,7 +88,7 @@ async def list_attendances(
     rows = query.order_by(Attendance.check_in_time.desc()).offset(skip).limit(limit).all()
     return AttendanceListResponse(
         total=total,
-        attendances=[_build_response(a) for a in rows],
+        attendances=[build_attendance_response(a) for a in rows],
     )
 
 
@@ -158,25 +103,14 @@ async def register_manual(
     current_user: User = Depends(require_role(UserRole.ADMIN, UserRole.PROFESSOR)),
 ):
     """Registra asistencia manualmente sin necesidad de cámara."""
-    # Validar que existan las FK
-    if not db.query(Student).filter(Student.id == data.student_id).first():
-        raise NotFoundException(f"Estudiante '{data.student_id}' no encontrado")
-    if not db.query(Subject).filter(Subject.id == data.subject_id).first():
-        raise NotFoundException(f"Materia '{data.subject_id}' no encontrada")
-    if not db.query(Laboratory).filter(Laboratory.id == data.laboratory_id).first():
-        raise NotFoundException(f"Laboratorio '{data.laboratory_id}' no encontrado")
-
-    att = Attendance(
+    att = create_manual_attendance(
         student_id=data.student_id,
         subject_id=data.subject_id,
         laboratory_id=data.laboratory_id,
         confidence_score=data.confidence_score,
-        synced=True,
+        db=db
     )
-    db.add(att)
-    db.commit()
-    db.refresh(att)
-    return _build_response(att)
+    return build_attendance_response(att)
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -288,7 +222,7 @@ async def live_frame(
         )
 
     # Cargar encodings una vez al inicio del stream
-    known_encodings, known_ids, known_names = _load_encodings(db)
+    known_encodings, known_ids, known_names = load_all_encodings(db)
     subject_id = camera_session.subject_id
 
     def generate():
@@ -314,11 +248,11 @@ async def live_frame(
                 # Registrar asistencias detectadas (anti-duplicado 1h)
                 for match in matches:
                     sid = match["student_id"]
-                    if subject_id and not _already_registered(sid, subject_id, db_gen):
+                    if subject_id and not is_already_registered(sid, subject_id, db_gen):
                         att = Attendance(
                             student_id=sid,
                             subject_id=subject_id,
-                            laboratory_id=_get_lab_from_subject(subject_id, db_gen),
+                            laboratory_id=get_lab_from_subject(subject_id, db_gen),
                             confidence_score=match["confidence"],
                             synced=True,
                         )
@@ -340,17 +274,6 @@ async def live_frame(
     )
 
 
-def _get_lab_from_subject(subject_id: str, db: Session) -> Optional[UUID]:
-    """Helper: obtiene el laboratory_id de una materia."""
-    subject = db.query(Subject).filter(Subject.id == subject_id).first()
-    return subject.laboratory_id if subject else None
-
-
-# ────────────────────────────────────────────────────────────────────
-# POST /api/attendance/sync-offline
-# Recibe registros encolados en IndexedDB y los persiste en la BD.
-# ────────────────────────────────────────────────────────────────────
-
 @router.post("/sync-offline", response_model=OfflineSyncResponse)
 async def sync_offline(
     records: list[OfflineSyncRecord],
@@ -360,58 +283,6 @@ async def sync_offline(
     """
     Sincroniza registros de asistencia capturados en modo offline (IndexedDB).
     Ignora duplicados (mismo estudiante + materia en ventana de 1h).
-
-    Body: lista de OfflineSyncRecord
-    Retorna: { received, saved, duplicates_skipped, errors }
     """
-    saved = 0
-    duplicates = 0
-    errors = 0
-
-    for record in records:
-        try:
-            check_time = record.check_in_time or datetime.utcnow()
-
-            # Verificar que el estudiante y la materia existen
-            student = db.query(Student).filter(Student.id == record.student_id).first()
-            subject = db.query(Subject).filter(Subject.id == record.subject_id).first()
-            if not student or not subject:
-                errors += 1
-                continue
-
-            # Anti-duplicado: misma asistencia en ventana de 1h alrededor del check_in_time
-            window_start = check_time - timedelta(hours=1)
-            window_end   = check_time + timedelta(hours=1)
-            exists = db.query(Attendance).filter(
-                Attendance.student_id == record.student_id,
-                Attendance.subject_id  == record.subject_id,
-                Attendance.check_in_time >= window_start,
-                Attendance.check_in_time <= window_end,
-            ).first()
-
-            if exists:
-                duplicates += 1
-                continue
-
-            att = Attendance(
-                student_id=record.student_id,
-                subject_id=record.subject_id,
-                laboratory_id=record.laboratory_id,
-                confidence_score=record.confidence_score,
-                check_in_time=check_time,
-                synced=True,
-            )
-            db.add(att)
-            db.flush()
-            saved += 1
-
-        except Exception:
-            errors += 1
-
-    db.commit()
-    return OfflineSyncResponse(
-        received=len(records),
-        saved=saved,
-        duplicates_skipped=duplicates,
-        errors=errors,
-    )
+    result = sync_offline_attendances(records, db)
+    return OfflineSyncResponse(**result)

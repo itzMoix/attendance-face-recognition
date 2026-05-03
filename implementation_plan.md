@@ -1,5 +1,59 @@
 # Sistema de Control de Asistencias con Reconocimiento Facial
 
+# Sprint Final: Refactorización y Modo Offline Real
+
+Este sprint abordará las deudas técnicas más importantes y completará la funcionalidad offline para tener el sistema listo para producción.
+
+## User Review Required
+> [!IMPORTANT]
+> Revisa este plan de acción final. Modificaremos archivos clave del backend y ajustaremos la configuración del frontend para habilitar la PWA.
+
+## Proposed Changes
+
+### Backend Refactoring (Capa de Servicios)
+Vamos a extraer toda la lógica de negocio que está mezclada dentro de los endpoints de la API hacia la capa de servicios, respetando la arquitectura original.
+
+#### [NEW] `backend/app/services/report_service.py`
+- Moveremos la lógica de cálculo de tendencias, conteos diarios y medias móviles (promedios de confianza).
+- Crearemos funciones puras que reciban la sesión de DB y los parámetros.
+
+#### [NEW] `backend/app/services/attendance_service.py`
+- Moveremos la lógica de registro manual, carga de encodings (helper `_load_encodings`), validación antiduplicados y la lógica de sincronización offline masiva.
+
+#### [NEW] `backend/app/services/offline_sync_service.py`
+- Encapsulará la lógica de conciliación (conflict resolution) para cuando el frontend envíe múltiples asistencias offline acumuladas.
+
+#### [MODIFY] `backend/app/api/reports.py`
+- Se limpiará drásticamente. Ahora solo recibirá el request (HTTP), validará permisos, llamará a `report_service.py` y devolverá la respuesta.
+
+#### [MODIFY] `backend/app/api/attendance.py`
+- Se simplificará delegando la lógica pesada a `attendance_service.py`. Mantendrá únicamente la inyección de dependencias y la generación del stream MJPEG (que ya depende de `face_service.py`).
+
+---
+
+### Frontend PWA (Modo Offline Real)
+Para que el sistema sea inmune a caídas de red, IndexedDB no es suficiente. Necesitamos cachear los assets estáticos del frontend.
+
+#### [MODIFY] `frontend/package.json`
+- Agregar la dependencia de desarrollo `vite-plugin-pwa`.
+
+#### [MODIFY] `frontend/vite.config.js`
+- Configurar el plugin de PWA con estrategias de caché `NetworkFirst` para la API y `CacheFirst` para los assets estáticos. Configurar el *manifest* de la aplicación.
+
+#### [MODIFY] `frontend/src/main.jsx`
+- Registrar el *Service Worker* generado por Vite para activar el soporte offline.
+
+## Verification Plan
+
+### Automated Tests (Siguiente Paso)
+- Una vez completada la refactorización, el código será testable. En un paso posterior crearemos las pruebas automatizadas (Test Unitarios).
+
+### Manual Verification
+- **Backend**: Realizaremos llamadas HTTP a todos los endpoints de reportes y asistencias para verificar que el comportamiento sea idéntico (pruebas de regresión).
+- **Frontend**: Apagaremos el contenedor del servidor o simularemos modo *Offline* en Chrome DevTools y recargaremos la página de asistencias. La página deberá cargar instantáneamente mostrando los datos cacheados.
+
+---
+
 Sistema modular y escalable para control de asistencias en laboratorios universitarios usando reconocimiento facial con cámara fija y detección automática.
 
 ## Especificaciones del Sistema
