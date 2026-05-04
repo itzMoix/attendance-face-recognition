@@ -87,6 +87,32 @@ const authService = {
      */
     getToken() {
         return localStorage.getItem('token');
+    },
+
+    /**
+     * Request password reset
+     * @param {string} email
+     * @returns {Promise<object>}
+     */
+    async forgotPassword(email) {
+        const response = await axios.post(api.endpoints.forgotPassword, {
+            email
+        });
+        return response.data;
+    },
+
+    /**
+     * Reset password with token
+     * @param {string} token
+     * @param {string} newPassword
+     * @returns {Promise<object>}
+     */
+    async resetPassword(token, newPassword) {
+        const response = await axios.post(api.endpoints.resetPassword, {
+            token,
+            new_password: newPassword
+        });
+        return response.data;
     }
 };
 

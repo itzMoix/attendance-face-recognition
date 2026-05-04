@@ -10,6 +10,7 @@ from .laboratory import Laboratory
 from .subject import Subject
 from .attendance import Attendance
 from .face_encoding import FaceEncoding
+from .password_reset import PasswordResetToken
 
 __all__ = [
     "Base",
@@ -21,4 +22,6 @@ __all__ = [
     "Subject",
     "Attendance",
     "FaceEncoding",
+    "PasswordResetToken",
 ]
+

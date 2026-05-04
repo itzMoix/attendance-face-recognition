@@ -4,6 +4,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import MainLayout from './components/common/MainLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfessorDashboard from './pages/ProfessorDashboard';
 import StudentPortal from './pages/StudentPortal';
@@ -18,6 +20,8 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/login" replace />} />

@@ -9,6 +9,8 @@ export const api = {
         login: `${API_URL}/api/auth/login`,
         logout: `${API_URL}/api/auth/logout`,
         me: `${API_URL}/api/auth/me`,
+        forgotPassword: `${API_URL}/api/auth/forgot-password`,
+        resetPassword: `${API_URL}/api/auth/reset-password`,
         students: `${API_URL}/api/students`,
     }
 };
