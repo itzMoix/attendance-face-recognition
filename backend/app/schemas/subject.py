@@ -19,8 +19,13 @@ class SubjectBase(BaseModel):
     schedule: str = Field(..., max_length=200, description="Horario, ej: Lunes y Miércoles 08:00-10:00")
 
 
-class SubjectCreate(SubjectBase):
-    """Schema para crear materia"""
+class SubjectCreate(BaseModel):
+    """Schema para crear materia. professor_id es opcional: el backend lo asigna automáticamente si el usuario es PROFESSOR."""
+    code: str = Field(..., max_length=20)
+    name: str = Field(..., min_length=1, max_length=150)
+    professor_id: Optional[UUID] = Field(None, description="UUID del profesor (requerido para Admin, auto-asignado para Professor)")
+    laboratory_id: UUID = Field(..., description="UUID del laboratorio asignado")
+    schedule: str = Field(..., max_length=200)
     is_active: bool = True
 
 

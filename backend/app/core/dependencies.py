@@ -80,19 +80,32 @@ async def get_current_active_user(
 def require_role(*allowed_roles: UserRole):
     """
     Dependency factory para verificar roles de usuario.
-    
+    Tolerante a mayúsculas/minúsculas en la comparación de roles.
+
     Args:
         *allowed_roles: Roles permitidos
-        
+
     Returns:
         Función de dependencia que verifica el rol
-        
+
     Ejemplo:
         @app.get("/admin", dependencies=[Depends(require_role(UserRole.ADMIN))])
     """
+    # Normalizar los roles permitidos a sus valores string en MAYÚSCULAS
+    allowed_values = {r.value.upper() for r in allowed_roles}
+
     async def role_checker(current_user: User = Depends(get_current_active_user)) -> User:
-        if current_user.role not in allowed_roles:
-            raise ForbiddenException(f"Access denied. Required role: {', '.join(r.value for r in allowed_roles)}")
+        # Obtener el valor del rol del usuario (puede ser enum o string)
+        user_role_value = (
+            current_user.role.value if hasattr(current_user.role, "value")
+            else str(current_user.role)
+        ).upper()
+
+        if user_role_value not in allowed_values:
+            raise ForbiddenException(
+                f"Acceso denegado. Tu rol actual es '{user_role_value}'. "
+                f"Se requiere uno de: {', '.join(allowed_values)}"
+            )
         return current_user
-    
+
     return role_checker

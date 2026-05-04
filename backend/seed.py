@@ -1,18 +1,20 @@
 """
 Script de Seed para datos de prueba.
-Crea: Laboratorio, Profesor, Materia, Estudiante + Encoding Facial Real.
+Crea: Admin, Laboratorio, Profesor, Materia, 2 Estudiantes + Encoding Facial.
 
-Uso: python seed.py  (desde dentro del contenedor backend)
+Uso: python seed.py  (desde la carpeta backend/)
 """
 import sys
 import os
 import uuid
+import tempfile
 import bcrypt
 import numpy as np
 import urllib.request
 
-# ── Setup de path para que encuentre los módulos de la app ─────────
-sys.path.insert(0, '/app')
+# Forzar stdout en UTF-8 para evitar errores en Windows con caracteres especiales
+sys.stdout = open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1)
+sys.stderr = open(sys.stderr.fileno(), mode='w', encoding='utf-8', buffering=1)
 
 from sqlalchemy.orm import Session
 from app.config.database import SessionLocal
@@ -31,7 +33,6 @@ def hash_pwd(password: str) -> str:
 def download_face_image(path: str) -> bool:
     """
     Descarga una imagen de rostro conocida para generar el encoding.
-    Usa la imagen de ejemplo del repositorio de face_recognition.
     """
     urls = [
         "https://raw.githubusercontent.com/ageitgey/face_recognition/master/examples/obama.jpg",
@@ -39,34 +40,34 @@ def download_face_image(path: str) -> bool:
     ]
     for url in urls:
         try:
-            print(f"  Descargando imagen de ejemplo desde: {url[:60]}...")
+            print(f"  Descargando imagen desde: {url[:60]}...")
             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req, timeout=15) as r:
                 with open(path, 'wb') as f:
                     f.write(r.read())
-            print(f"  ✓ Imagen descargada ({os.path.getsize(path)} bytes)")
+            print(f"  [OK] Imagen descargada ({os.path.getsize(path)} bytes)")
             return True
         except Exception as e:
-            print(f"  ✗ Falló {url[:60]}: {e}")
+            print(f"  [FAIL] {url[:60]}: {e}")
     return False
 
 
 def generate_encoding_from_image(image_path: str):
     """
-    Genera el encoding facial (vector de 128 dimensiones) desde una imagen.
-    Retorna bytes o None si no se detecta ningún rostro.
+    Genera el encoding facial (128 dimensiones) desde una imagen.
     """
     try:
         import face_recognition
         image = face_recognition.load_image_file(image_path)
         encodings = face_recognition.face_encodings(image)
         if not encodings:
-            print("  ✗ No se detectó ningún rostro en la imagen descargada.")
+            print("  [WARN] No se detecto ningun rostro en la imagen descargada.")
             return None
-        print(f"  ✓ Encoding generado ({len(encodings)} rostro(s) detectados)")
-        return encodings[0].tobytes()
+        print(f"  [OK] Encoding generado ({len(encodings)} rostro(s) detectados)")
+        import pickle
+        return pickle.dumps(encodings[0])
     except Exception as e:
-        print(f"  ✗ Error generando encoding: {e}")
+        print(f"  [FAIL] Error generando encoding: {e}")
         return None
 
 
@@ -75,7 +76,24 @@ def seed(db: Session):
     print("  SEED DE DATOS DE PRUEBA")
     print("="*60)
 
-    # ── 1. Laboratorio ────────────────────────────────────────────
+    # -- 0. Admin -------------------------------------------------------
+    print("\n[0/6] Creando Admin...")
+    admin_user = db.query(User).filter_by(email="admin@sistema.edu").first()
+    if not admin_user:
+        admin_user = User(
+            id=uuid.uuid4(),
+            email="admin@sistema.edu",
+            password_hash=hash_pwd("admin1234"),
+            role=UserRole.ADMIN,
+            is_active=True,
+        )
+        db.add(admin_user)
+        db.flush()
+        print("  [OK] Admin creado: admin@sistema.edu / admin1234")
+    else:
+        print("  [->] Ya existe: admin@sistema.edu")
+
+    # -- 1. Laboratorio -------------------------------------------------
     print("\n[1/6] Creando Laboratorio...")
     lab = db.query(Laboratory).filter_by(name="Laboratorio A101").first()
     if not lab:
@@ -89,11 +107,11 @@ def seed(db: Session):
         )
         db.add(lab)
         db.flush()
-        print(f"  ✓ Laboratorio creado: {lab.name} (id={lab.id})")
+        print(f"  [OK] Laboratorio creado: {lab.name} (id={lab.id})")
     else:
-        print(f"  → Ya existe: {lab.name}")
+        print(f"  [->] Ya existe: {lab.name}")
 
-    # ── 2. Profesor (usuario + registro de profesor) ───────────────
+    # -- 2. Profesor ----------------------------------------------------
     print("\n[2/6] Creando Profesor...")
     prof_user = db.query(User).filter_by(email="profesor@sistema.edu").first()
     if not prof_user:
@@ -112,17 +130,17 @@ def seed(db: Session):
             user_id=prof_user.id,
             employee_id="EMP-2024001",
             first_name="Carlos",
-            last_name="Ramírez",
-            department="Ingeniería en Sistemas",
+            last_name="Ramirez",
+            department="Ingenieria en Sistemas",
         )
         db.add(professor)
         db.flush()
-        print(f"  ✓ Profesor creado: Carlos Ramírez (email=profesor@sistema.edu)")
+        print("  [OK] Profesor creado: Carlos Ramirez (email=profesor@sistema.edu)")
     else:
         professor = db.query(Professor).filter_by(user_id=prof_user.id).first()
-        print(f"  → Ya existe: profesor@sistema.edu")
+        print("  [->] Ya existe: profesor@sistema.edu")
 
-    # ── 3. Materia ────────────────────────────────────────────────
+    # -- 3. Materia -----------------------------------------------------
     print("\n[3/6] Creando Materia...")
     subject = db.query(Subject).filter_by(code="SIS-401").first()
     if not subject:
@@ -132,17 +150,17 @@ def seed(db: Session):
             name="Sistemas Operativos",
             professor_id=professor.id,
             laboratory_id=lab.id,
-            schedule="Lunes y Miércoles 10:00-12:00",
+            schedule="Lunes y Miercoles 10:00-12:00",
             is_active=True,
         )
         db.add(subject)
         db.flush()
-        print(f"  ✓ Materia creada: {subject.name} ({subject.code})")
+        print(f"  [OK] Materia creada: {subject.name} ({subject.code})")
     else:
-        print(f"  → Ya existe: {subject.name}")
+        print(f"  [->] Ya existe: {subject.name}")
 
-    # ── 4. Estudiante (usuario + registro de estudiante) ──────────
-    print("\n[4/6] Creando Estudiante...")
+    # -- 4. Estudiante 1 ------------------------------------------------
+    print("\n[4/6] Creando Estudiante 1...")
     stud_user = db.query(User).filter_by(email="juan.perez@student.edu").first()
     if not stud_user:
         stud_user = User(
@@ -160,22 +178,24 @@ def seed(db: Session):
             user_id=stud_user.id,
             student_id="EST-2024001",
             first_name="Juan",
-            last_name="Pérez",
-            career="Ingeniería en Sistemas",
+            last_name="Perez",
+            career="Ingenieria en Sistemas",
             semester=4,
         )
         db.add(student)
         db.flush()
-        print(f"  ✓ Estudiante creado: Juan Pérez (email=juan.perez@student.edu)")
+        print("  [OK] Estudiante creado: Juan Perez (email=juan.perez@student.edu)")
     else:
         student = db.query(Student).filter_by(user_id=stud_user.id).first()
-        print(f"  → Ya existe: juan.perez@student.edu")
+        print("  [->] Ya existe: juan.perez@student.edu")
 
-    # ── 5. Encoding facial ────────────────────────────────────────
+    # -- 5. Encoding facial del estudiante 1 ----------------------------
     print("\n[5/6] Generando Encoding Facial...")
     existing_enc = db.query(FaceEncoding).filter_by(student_id=student.id).first()
     if not existing_enc:
-        tmp_path = "/tmp/test_face.jpg"
+        # Usar directorio temporal compatible con Windows y Linux
+        tmp_dir = tempfile.gettempdir()
+        tmp_path = os.path.join(tmp_dir, "test_face_seed.jpg")
         downloaded = download_face_image(tmp_path)
 
         if downloaded:
@@ -189,17 +209,16 @@ def seed(db: Session):
                 )
                 db.add(face_enc)
                 db.flush()
-                print(f"  ✓ Encoding facial guardado en BD (128 dimensiones)")
+                print("  [OK] Encoding facial guardado en BD (128 dimensiones, serializado con pickle)")
             else:
-                print("  ⚠ No se pudo generar encoding — el estudiante existe pero sin encoding facial")
+                print("  [WARN] No se pudo generar encoding — estudiante existe pero sin encoding facial")
         else:
-            print("  ⚠ No se pudo descargar imagen — el estudiante existe pero sin encoding facial")
+            print("  [WARN] No se pudo descargar imagen — estudiante existe pero sin encoding facial")
     else:
-        encoding_arr = np.frombuffer(existing_enc.encoding, dtype=np.float64)
-        print(f"  → Ya existe encoding ({len(encoding_arr)} dimensiones)")
+        print(f"  [->] Ya existe encoding para el estudiante")
 
-    # ── 6. Segundo estudiante (sin encoding, para probar ese caso) ─
-    print("\n[6/6] Creando segundo estudiante (sin encoding)...")
+    # -- 6. Estudiante 2 (sin encoding) ---------------------------------
+    print("\n[6/6] Creando Estudiante 2 (sin encoding)...")
     stud2_user = db.query(User).filter_by(email="maria.garcia@student.edu").first()
     if not stud2_user:
         stud2_user = User(
@@ -212,37 +231,45 @@ def seed(db: Session):
         db.add(stud2_user)
         db.flush()
 
-        student2 = Student(
+        Student(
             id=uuid.uuid4(),
             user_id=stud2_user.id,
             student_id="EST-2024002",
-            first_name="María",
-            last_name="García",
-            career="Ingeniería en Software",
+            first_name="Maria",
+            last_name="Garcia",
+            career="Ingenieria en Software",
             semester=3,
         )
-        db.add(student2)
+        db.add(Student(
+            id=uuid.uuid4(),
+            user_id=stud2_user.id,
+            student_id="EST-2024002",
+            first_name="Maria",
+            last_name="Garcia",
+            career="Ingenieria en Software",
+            semester=3,
+        ))
         db.flush()
-        print(f"  ✓ Segundo estudiante creado: María García (sin encoding aún)")
+        print("  [OK] Segundo estudiante creado: Maria Garcia (sin encoding aun)")
     else:
-        print(f"  → Ya existe: maria.garcia@student.edu")
+        print("  [->] Ya existe: maria.garcia@student.edu")
 
     db.commit()
 
-    # ── Resumen final ─────────────────────────────────────────────
+    # -- Resumen --------------------------------------------------------
     print("\n" + "="*60)
-    print("  ✅ SEED COMPLETADO")
+    print("  SEED COMPLETADO EXITOSAMENTE")
     print("="*60)
-    print("\n📋 CREDENCIALES DE ACCESO:")
-    print("  Admin:    admin@sistema.edu     / admin1234")
-    print("  Profesor: profesor@sistema.edu  / profesor1234")
-    print("  Alumno 1: juan.perez@student.edu / student1234")
-    print("  Alumno 2: maria.garcia@student.edu / student1234")
-    print("\n📚 DATOS CREADOS:")
+    print("\nCREDENCIALES DE ACCESO:")
+    print("  Admin:    admin@sistema.edu          / admin1234")
+    print("  Profesor: profesor@sistema.edu        / profesor1234")
+    print("  Alumno 1: juan.perez@student.edu      / student1234")
+    print("  Alumno 2: maria.garcia@student.edu    / student1234")
+    print("\nDATOS CREADOS:")
     print(f"  Laboratorio: Laboratorio A101 (id={lab.id})")
-    print(f"  Materia:     SIS-401 — Sistemas Operativos")
+    print(f"  Materia:     SIS-401 - Sistemas Operativos")
     print(f"  Estudiantes: 2 (1 con encoding facial, 1 sin)")
-    print("\n🌐 ACCEDE EN: http://localhost:5173")
+    print("\nACCEDE EN: http://localhost:5173")
     print("="*60 + "\n")
 
 
@@ -252,7 +279,7 @@ if __name__ == "__main__":
         seed(db)
     except Exception as e:
         db.rollback()
-        print(f"\n❌ Error durante el seed: {e}")
+        print(f"\n[ERROR] Error durante el seed: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
