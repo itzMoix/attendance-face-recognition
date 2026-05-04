@@ -98,12 +98,22 @@ async def upload_face(
     student_id: str,
     file: UploadFile = File(..., description="Foto JPG/PNG del estudiante"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Sube una foto del estudiante, genera el encoding y lo guarda en BD.
     Reemplaza el encoding anterior si ya existía.
     """
+    # Verificar permisos (Admin o el propio estudiante)
+    val = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    if str(val).upper().replace("USERROLE.", "") != "ADMIN":
+        if str(val).upper().replace("USERROLE.", "") != "STUDENT":
+            raise ForbiddenException("Rol no autorizado para esta acción")
+        # Verificar que el estudiante que sube la foto sea dueño del perfil
+        student_profile = db.query(Student).filter(Student.user_id == current_user.id).first()
+        if not student_profile or str(student_profile.id) != student_id:
+            raise ForbiddenException("No puedes actualizar el rostro de otro estudiante")
+
     _check_fr_available()
     student = _get_student_or_404(student_id, db)
 
@@ -156,7 +166,7 @@ async def upload_face(
 async def capture_face(
     student_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role(UserRole.ADMIN)),
+    current_user: User = Depends(get_current_active_user),
 ):
     """
     Captura un frame desde la cámara del laptop, genera encoding y lo guarda en BD.
@@ -164,6 +174,14 @@ async def capture_face(
     La cámara debe estar disponible (no en uso por otra sesión).
     """
     import cv2
+
+    val = current_user.role.value if hasattr(current_user.role, "value") else current_user.role
+    if str(val).upper().replace("USERROLE.", "") != "ADMIN":
+        if str(val).upper().replace("USERROLE.", "") != "STUDENT":
+            raise ForbiddenException("Rol no autorizado para esta acción")
+        student_profile = db.query(Student).filter(Student.user_id == current_user.id).first()
+        if not student_profile or str(student_profile.id) != student_id:
+            raise ForbiddenException("No puedes capturar el rostro de otro estudiante")
 
     _check_fr_available()
     student = _get_student_or_404(student_id, db)

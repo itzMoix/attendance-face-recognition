@@ -5,7 +5,10 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { attendanceService } from '../services/apiService';
+import studentService from '../services/studentService';
 import useAuthStore from '../store/authStore';
+import FaceRegistrationModal from '../components/camera/FaceRegistrationModal';
+import { Camera } from 'lucide-react';
 
 // ─── Badge de confianza ───────────────────────────────────────────
 const ConfidenceBadge = ({ score }) => {
@@ -61,17 +64,24 @@ const MiniStat = ({ label, value, icon: Icon, color }) => (
 const StudentPortal = () => {
     const { user } = useAuthStore();
     const [attendances, setAttendances] = useState([]);
+    const [studentProfile, setStudentProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // 'all' | 'today' | 'week'
+    const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
 
     useEffect(() => {
         const fetch = async () => {
             setLoading(true);
             try {
-                const res = await attendanceService.list({ limit: 100 });
-                setAttendances(res.attendances);
+                const resAtt = await attendanceService.list({ limit: 100 });
+                setAttendances(resAtt.attendances);
+                
+                const resStu = await studentService.list();
+                if (resStu.students && resStu.students.length > 0) {
+                    setStudentProfile(resStu.students[0]);
+                }
             } catch {
-                toast.error('Error al cargar tu historial de asistencias');
+                toast.error('Error al cargar tu información');
             } finally {
                 setLoading(false);
             }
@@ -120,14 +130,27 @@ const StudentPortal = () => {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30">
-                    <User className="h-7 w-7 text-white" />
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30">
+                        <User className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mi Portal</h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Mi Portal</h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
-                </div>
+                
+                {/* Botón de actualizar rostro */}
+                {studentProfile && (
+                    <button
+                        onClick={() => setIsCameraModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 font-medium rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors shadow-sm border border-indigo-100 dark:border-indigo-800"
+                    >
+                        <Camera className="h-5 w-5" />
+                        <span className="hidden sm:inline">Actualizar Mi Rostro</span>
+                    </button>
+                )}
             </div>
 
             {/* Stats */}
@@ -226,6 +249,15 @@ const StudentPortal = () => {
                     </div>
                 )}
             </div>
+            
+            {/* Modal de Registro de Rostro */}
+            {isCameraModalOpen && studentProfile && (
+                <FaceRegistrationModal
+                    isOpen={isCameraModalOpen}
+                    onClose={() => setIsCameraModalOpen(false)}
+                    student={studentProfile}
+                />
+            )}
         </div>
     );
 };

@@ -91,6 +91,7 @@ const FaceRegistrationModal = ({ isOpen, onClose, student }) => {
                                     ref={webcamRef}
                                     screenshotFormat="image/jpeg"
                                     videoConstraints={cameraService.getVideoConstraints()}
+                                    onUserMediaError={(err) => toast.error(`Error de cámara: ${err.message || 'No se pudo acceder a la cámara'}`)}
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
