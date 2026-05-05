@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     ATTENDANCE_SNAPSHOTS_DIR: str = "uploads/snapshots"
     MAX_UPLOAD_SIZE: int = 5 * 1024 * 1024  # 5MB
     
+    # SMTP Config for Emails
+    SMTP_HOST: Optional[str] = None
+    SMTP_PORT: Optional[int] = None
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: Optional[str] = None
+    
+    # Frontend URL (For building reset links)
+    FRONTEND_URL: str = "http://localhost:5173"
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

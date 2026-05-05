@@ -27,7 +27,7 @@ const authService = {
      * @returns {Promise<{token: string, user: object}>}
      */
     async login(email, password) {
-        const response = await axios.post(api.endpoints.login, {
+        const response = await axiosInstance.post(api.endpoints.login, {
             email,
             password,
         });
@@ -55,7 +55,7 @@ const authService = {
             throw new Error('No token available');
         }
 
-        const response = await axios.get(api.endpoints.me, {
+        const response = await axiosInstance.get(api.endpoints.me, {
             headers: {
                 Authorization: `Bearer ${authToken}`,
             },
@@ -95,7 +95,8 @@ const authService = {
      * @returns {Promise<object>}
      */
     async forgotPassword(email) {
-        const response = await axios.post(api.endpoints.forgotPassword, {
+        // CAMBIO: Usa axiosInstance en lugar de axios
+        const response = await axiosInstance.post(api.endpoints.forgotPassword, {
             email
         });
         return response.data;
@@ -108,7 +109,7 @@ const authService = {
      * @returns {Promise<object>}
      */
     async resetPassword(token, newPassword) {
-        const response = await axios.post(api.endpoints.resetPassword, {
+        const response = await axiosInstance.post(api.endpoints.resetPassword, {
             token,
             new_password: newPassword
         });

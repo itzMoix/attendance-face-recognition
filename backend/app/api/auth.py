@@ -20,6 +20,7 @@ from app.schemas.password_reset import (
 from app.core.security import verify_password, create_access_token, hash_password
 from app.core.dependencies import get_current_active_user
 from app.core.exceptions import CredentialsException, BadRequestException, NotFoundException
+from app.core.email import send_reset_email
 
 router = APIRouter()
 
@@ -121,7 +122,6 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
         # Por seguridad, no revelar si el email existe o no
         return ForgotPasswordResponse(
             message="Si el correo está registrado, recibirás un enlace de recuperación.",
-            reset_token=None,
         )
 
     # Invalidar tokens anteriores del usuario
@@ -140,12 +140,11 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
     db.add(reset_token)
     db.commit()
 
-    # En producción: enviar email con el enlace
-    # send_reset_email(user.email, token_value)
+    # Enviar email con el enlace
+    send_reset_email(user.email, token_value)
 
     return ForgotPasswordResponse(
         message="Si el correo está registrado, recibirás un enlace de recuperación.",
-        reset_token=token_value,  # Solo para demo — quitar en producción
     )
 
 

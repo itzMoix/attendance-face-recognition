@@ -9,7 +9,6 @@ const ForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isSent, setIsSent] = useState(false);
-    const [resetToken, setResetToken] = useState(null);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -19,13 +18,7 @@ const ForgotPassword = () => {
             // Call the real backend endpoint
             const response = await authService.forgotPassword(email);
             
-            // For demo purposes, we capture the token to show it on screen.
-            // In production, the backend wouldn't return this token, 
-            // and we'd just show the success message.
-            if (response.reset_token) {
-                setResetToken(response.reset_token);
-            }
-
+            // The backend no longer returns a token. We just show success.
             setIsSent(true);
             toast.success(response.message || 'Correo de recuperación enviado.');
         } catch (error) {
@@ -138,22 +131,6 @@ const ForgotPassword = () => {
                             Revisa tu bandeja de entrada y carpeta de spam. El enlace expira en 30 minutos.
                         </p>
 
-                        {resetToken && (
-                            <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-left">
-                                <p className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider mb-2">Demo Mode: Link de Reseteo</p>
-                                <p className="text-sm text-amber-800 dark:text-amber-200 break-all mb-3">
-                                    En producción esto se enviaría por correo. Token de prueba:
-                                    <br/>
-                                    <span className="font-mono text-xs opacity-75">{resetToken}</span>
-                                </p>
-                                <Link
-                                    to={`/reset-password?token=${resetToken}`}
-                                    className="inline-block w-full text-center py-2 px-4 text-xs font-bold rounded-lg text-amber-900 bg-amber-200 hover:bg-amber-300 transition-colors"
-                                >
-                                    Ir a Resetear Contraseña (Demo)
-                                </Link>
-                            </div>
-                        )}
 
                         <div className="space-y-3">
                             <button

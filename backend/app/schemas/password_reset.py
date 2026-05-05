@@ -18,8 +18,6 @@ class ResetPasswordRequest(BaseModel):
 class ForgotPasswordResponse(BaseModel):
     """Respuesta a solicitud de recuperación"""
     message: str
-    # En producción no se devuelve el token; aquí se incluye para demo
-    reset_token: str | None = None
 
 
 class ResetPasswordResponse(BaseModel):
